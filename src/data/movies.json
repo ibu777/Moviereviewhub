@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "title": "Neon Horizon",
+    "year": 2021,
+    "genre": "Sci-Fi",
+    "poster": "https://placehold.co/500x750?text=Neon+Horizon",
+    "description": "A young pilot uncovers a hidden signal above the city.",
+    "cast": ["Maya Chen", "Drew Brooks", "Nia Patel"],
+    "releaseDate": "2021-09-10",
+    "rating": 4.6,
+    "userRating": 0
+  },
+  {
+    "id": 2,
+    "title": "Midnight Circuit",
+    "year": 2020,
+    "genre": "Action",
+    "poster": "https://placehold.co/500x750?text=Midnight+Circuit",
+    "description": "A racing prodigy is pulled into a dangerous underground league.",
+    "cast": ["Leo Grant", "Sara Miles", "Noah Reed"],
+    "releaseDate": "2020-11-20",
+    "rating": 4.3,
+    "userRating": 0
+  },
+  {
+    "id": 3,
+    "title": "Velvet Rain",
+    "year": 2019,
+    "genre": "Drama",
+    "poster": "https://placehold.co/500x750?text=Velvet+Rain",
+    "description": "A quiet town hides a secret that changes a family forever.",
+    "cast": ["Amira Cole", "Jonah Price", "Kira Moss"],
+    "releaseDate": "2019-04-05",
+    "rating": 4.1,
+    "userRating": 0
+  },
+  {
+    "id": 4,
+    "title": "Shadow Orchard",
+    "year": 2022,
+    "genre": "Mystery",
+    "poster": "https://placehold.co/500x750?text=Shadow+Orchard",
+    "description": "A detective follows clues through a forgotten estate.",
+    "cast": ["Ethan Vale", "Lina Ross", "Marcus Bell"],
+    "releaseDate": "2022-07-14",
+    "rating": 4.7,
+    "userRating": 0
+  }
+]
