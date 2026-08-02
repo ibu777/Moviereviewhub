@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import moviesData from './data/movies.json';
+import { useEffect, useMemo, useState } from 'react';
+import { loadSavedRatings, mergeMoviesWithRatings, saveRatings } from './utils/reviewStorage';
 
 function StarRating({ value, onRate }) {
   return (
@@ -19,11 +19,56 @@ function StarRating({ value, onRate }) {
 }
 
 function App() {
-  const [movies, setMovies] = useState(moviesData);
+  const [movies, setMovies] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [selectedYear, setSelectedYear] = useState('All');
-  const [selectedMovie, setSelectedMovie] = useState(moviesData[0]);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const savedRatings = loadSavedRatings();
+
+    async function fetchMovies() {
+      try {
+        const searchResponse = await fetch('https://www.omdbapi.com/?s=movie&type=movie&apikey=trilogy');
+        if (!searchResponse.ok) throw new Error('Failed to load movies');
+
+        const searchData = await searchResponse.json();
+        if (searchData.Response === 'False') throw new Error(searchData.Error || 'Unable to load movies');
+
+        const movieIds = searchData.Search.slice(0, 4).map((movie) => movie.imdbID);
+        const detailResponses = await Promise.all(
+          movieIds.map((id) => fetch(`https://www.omdbapi.com/?i=${id}&plot=short&apikey=trilogy`))
+        );
+
+        const detailData = await Promise.all(detailResponses.map((response) => response.json()));
+        const mappedMovies = detailData.map((movie, index) => ({
+          id: movie.imdbID || `${index + 1}`,
+          title: movie.Title || 'Untitled Movie',
+          year: Number(movie.Year?.match(/\d{4}/)?.[0]) || 2020 + index,
+          genre: movie.Genre?.split(',')[0] || 'Movie',
+          poster: movie.Poster && movie.Poster !== 'N/A' ? movie.Poster : `https://placehold.co/500x750?text=${encodeURIComponent(movie.Title || 'Movie')}`,
+          description: movie.Plot || 'No description available.',
+          cast: movie.Actors ? movie.Actors.split(',').slice(0, 3) : ['OMDb data', 'Movie review', 'Community'],
+          releaseDate: movie.Released || 'Released info unavailable',
+          rating: Number((4 + index * 0.2).toFixed(1)),
+          userRating: 0,
+        }));
+
+        const moviesWithRatings = mergeMoviesWithRatings(mappedMovies, savedRatings);
+        setMovies(moviesWithRatings);
+        setSelectedMovie(moviesWithRatings[0] || null);
+      } catch (err) {
+        setError(err.message || 'Unable to load movies');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMovies();
+  }, []);
 
   const genres = useMemo(() => ['All', ...new Set(movies.map((movie) => movie.genre))], [movies]);
   const years = useMemo(() => ['All', ...new Set(movies.map((movie) => movie.year))], [movies]);
@@ -38,9 +83,16 @@ function App() {
   }, [movies, search, selectedGenre, selectedYear]);
 
   const handleRate = (movieId, rating) => {
-    setMovies((prev) =>
-      prev.map((movie) => (movie.id === movieId ? { ...movie, userRating: rating } : movie))
-    );
+    setMovies((prev) => {
+      const updatedMovies = prev.map((movie) => (movie.id === movieId ? { ...movie, userRating: rating } : movie));
+      const nextRatings = updatedMovies.reduce((acc, movie) => {
+        acc[movie.id] = movie.userRating;
+        return acc;
+      }, {});
+      saveRatings(nextRatings);
+      return updatedMovies;
+    });
+
     setSelectedMovie((prev) => (prev && prev.id === movieId ? { ...prev, userRating: rating } : prev));
   };
 
@@ -49,7 +101,7 @@ function App() {
       <div className="mx-auto max-w-7xl px-4 py-8">
         <header className="mb-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
           <h1 className="text-3xl font-bold">Movie Review App</h1>
-          <p className="mt-2 text-slate-400">Browse local movie data from JSON</p>
+          <p className="mt-2 text-slate-400">Browse movie data from OMDb</p>
         </header>
 
         <div className="mb-6 grid gap-4 md:grid-cols-3">
@@ -88,7 +140,9 @@ function App() {
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
-            {filteredMovies.map((movie) => (
+            {loading && <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-slate-300">Loading movies...</div>}
+            {error && <div className="rounded-2xl border border-rose-700 bg-rose-950/50 p-6 text-rose-200">{error}</div>}
+            {!loading && !error && filteredMovies.map((movie) => (
               <button
                 key={movie.id}
                 type="button"
